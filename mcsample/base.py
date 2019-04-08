@@ -27,6 +27,7 @@ class MCMCHandler( BaseObject ):
     def run(self, guess=None, nchains=None, nsteps=2000, warmup=500):
         """ """
         self.set_steps(nsteps, warmup)
+        self.setup(nchains=nchains)
         pos, prob, state = self.walkers.run_mcmc(self.get_guesses(guess), self._total_steps)
         
     # ------- #
