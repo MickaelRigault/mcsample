@@ -12,10 +12,25 @@ import emcee
 from propobject import BaseObject
 
 
+__all__ = ["chain_to_median_error", "Sampler"]
+
+def chain_to_median_error(chain, structure=[16,50,84]):
+    """ returns the value +error -error
+    value been the median (50) and errors the 1 sigma error (16, 84%)
+    
+    """
+    if len(np.shape(chain)) == 1:
+        v = np.percentile(chain, [16,50,84], axis=0)
+        return np.asarray((v[1], v[2]-v[1], v[1]-v[0]))
+    
+    return np.asarray([(v[1], v[2]-v[1], v[1]-v[0]) for v in np.percentile(chain, structure, axis=1).T])
+
+
 class MCMCHandler( BaseObject ):
     """ """
     PROPERTIES = ["sampler", "walkers", "nsteps", "warmup"]
     SIDE_PROPERTIES = ["nchains"]
+    DERIVED_PROPERTIES = ["pltcorner"]
     
     def __init__(self, sampler):
         """ """
@@ -33,19 +48,16 @@ class MCMCHandler( BaseObject ):
             from time import time
             t0 = time()
             for ii, (pos, prob, state) in enumerate(self.walkers.sample(self.get_guesses(guess), iterations=self._total_steps)):
-                self.verbose_mcmc_printer(ii)
+                self._verbose_mcmc_printer_(ii)
             # How long?
             t1 = time()
             time_mcmc = t1-t0
             print("Time taken to run 'emcee' is {0:.3f} seconds".format(time_mcmc))
-        
         else:
             pos, prob, state = self.walkers.run_mcmc(self.get_guesses(guess), self._total_steps)
 
-    def verbose_mcmc_printer(self, ii):
-        """
-        
-        """
+    def _verbose_mcmc_printer_(self, ii):
+        """ """
         percentage = ii*self.nchains*100./(self._total_steps*self.nchains)
         if ii <= self.warmup and percentage % 10 == 0:
             print("{0}/{1} --> {2:.1f}% : Warmup".format(ii*self.nchains, (self._total_steps*self.nchains), percentage))
@@ -93,7 +105,16 @@ class MCMCHandler( BaseObject ):
         """ """
         guess = np.zeros(self.nfreeparameters) if guess is None else np.asarray(guess)
         return np.asarray([g* (1+1e-2*np.random.randn(self.nchains)) for g in guess]).T
-    
+
+    # ------- #
+    # PLOTTER #
+    # ------- #
+    def show(self, **kwargs):
+        """ """
+        from .plot import MCCorner
+        self._derived_properties["pltcorner"] = MCCorner(self)
+        self.pltcorner.show(**kwargs)
+        
     # =================== #
     #   Parameters        #
     # =================== #
@@ -118,11 +139,16 @@ class MCMCHandler( BaseObject ):
         return self.walkers.chain.reshape((-1, self.nfreeparameters)).T
 
     @property
+    def pltcorner(self):
+        """ MCCorner Plotting method (loaded during self.show()) """
+        return self._derived_properties["pltcorner"]
+        
+    @property
     def derived_values(self):
         """ 3 times N array of the derived parameters
             [50%, +1sigma (to 84%), -1sigma (to 16%)]
         """
-        return map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(self.chains, [16, 50, 84],axis=0)))
+        return chain_to_median_error(self.chains)
     
     @property
     def derived_parameters(self):

@@ -112,7 +112,7 @@ class MCCorner( BaseObject ):
 
         self._side_properties["contours"] = contours
         
-    def setup(self, left=0.1, bottom=0.1, right=0.1, top=0.1, span=None):
+    def setup(self, left=0.15, bottom=0.15, right=0.05, top=0.05, span=None):
         """ """
         if span is None:
             span = np.max([0.015-0.002*np.sqrt(self.nfreeparameters), 0.005])
