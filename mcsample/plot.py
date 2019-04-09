@@ -240,7 +240,7 @@ class MCCorner( BaseObject ):
             labels = self.mcmchandler.freeparameters
         labels = _build_plotparam_(labels, self.nfreeparameters, "labels")
         [ax_.set_xlabel(label_, **kwargs) for ax_, label_ in zip(self.axes[-1], labels)]
-        [ax_.set_ylabel(label_, **kwargs) for ax_, label_ in zip(np.asarray(self.axes).T[0][1:], labels)]
+        [ax_.set_ylabel(label_, **kwargs) for ax_, label_ in zip(np.asarray(self.axes).T[0], labels)]
         
     def setup_axes_ticks(self):
         """ """
