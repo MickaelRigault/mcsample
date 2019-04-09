@@ -24,11 +24,35 @@ class MCMCHandler( BaseObject ):
     # ------- #
     #  Main   #
     # ------- #
-    def run(self, guess=None, nchains=None, nsteps=2000, warmup=500):
+    def run(self, guess=None, nchains=None, nsteps=2000, warmup=500, verbose=True):
         """ """
         self.set_steps(nsteps, warmup)
         self.setup(nchains=nchains)
-        pos, prob, state = self.walkers.run_mcmc(self.get_guesses(guess), self._total_steps)
+        
+        if verbose:
+            from time import time
+            t0 = time()
+            for ii, (pos, prob, state) in enumerate(self.walkers.sample(self.get_guesses(guess), iterations=self._total_steps)):
+                self.verbose_mcmc_printer(ii)
+            # How long?
+            t1 = time()
+            time_mcmc = t1-t0
+            print("Time taken to run 'emcee' is {0:.3f} seconds".format(time_mcmc))
+        
+        else:
+            pos, prob, state = self.walkers.run_mcmc(self.get_guesses(guess), self._total_steps)
+
+    def verbose_mcmc_printer(self, ii):
+        """
+        
+        """
+        percentage = ii*self.nchains*100./(self._total_steps*self.nchains)
+        if ii <= self.warmup and percentage % 10 == 0:
+            print("{0}/{1} --> {2:.1f}% : Warmup".format(ii*self.nchains, (self._total_steps*self.nchains), percentage))
+        elif ii == self.warmup or ii > self.warmup and percentage % 10 == 0:
+            print("{0}/{1} --> {2:.1f}% : Sampling".format(ii*self.nchains, (self._total_steps*self.nchains), percentage))
+        elif ii == self._total_steps - 1:
+            print("{0}/{1} --> {2:.1f}% : Sampling".format((self._total_steps*self.nchains), (self._total_steps*self.nchains), 100.))
         
     # ------- #
     # SETTER  #
