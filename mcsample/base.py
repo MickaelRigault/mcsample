@@ -39,10 +39,10 @@ class MCMCHandler( BaseObject ):
     # ------- #
     #  Main   #
     # ------- #
-    def run(self, guess=None, nchains=None, nsteps=2000, warmup=500, verbose=True):
+    def run(self, guess=None, nchains=None, nsteps=2000, warmup=500, kwargs=None, verbose=True):
         """ """
         self.set_steps(nsteps, warmup)
-        self.setup(nchains=nchains)
+        self.setup(nchains=nchains, kwargs=kwargs)
         
         if verbose:
             from time import time
@@ -91,12 +91,13 @@ class MCMCHandler( BaseObject ):
         """ """
         self._side_properties["nchains"] = nchains
         
-    def setup(self, nchains=None):
+    def setup(self, nchains=None, kwargs=None):
         """ """
         if nchains is not None:
             self.set_nchains(nchains)
             
-        self._properties["walkers"] = emcee.EnsembleSampler(self.nchains, self.nfreeparameters, self.sampler.get_logprob)
+        self._properties["walkers"] = emcee.EnsembleSampler(nwalkers=self.nchains, ndim=self.nfreeparameters,
+                                                            log_prob_fn=self.sampler.get_logprob, kwargs=kwargs)
 
     # ------- #
     # GETTER  #
@@ -295,7 +296,7 @@ class Sampler( BaseObject ):
         self._properties["freeparameters"] = freeparameters
         
     # - POSTERIOR
-    def get_logprob(self, param=None):
+    def get_logprob(self, param=None, **kwargs):
         """
         Combine the values from get_logprior and get_loglikelihood to set the log probability which will be maximized by the MCMC sampler.
         
@@ -318,7 +319,7 @@ class Sampler( BaseObject ):
             return -np.inf
             
         
-        return log_prior + self.get_loglikelihood() 
+        return log_prior + self.get_loglikelihood(**kwargs)
         
     #
     # Overwrite
@@ -362,7 +363,7 @@ class Sampler( BaseObject ):
         raise NotImplementedError("You must define get_prior_list() ")
           
     # - LIKELIHOOD
-    def get_loglikelihood(self, param=None):
+    def get_loglikelihood(self, param=None, **kwargs):
         """
         Call the so called function in the child class.
         
