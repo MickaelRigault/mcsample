@@ -411,7 +411,7 @@ class Sampler( BaseObject ):
         -------
         Void
         """
-        self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains)
+        self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains, verbose=verbose)
         
     # ================ #
     #  Properties      #
