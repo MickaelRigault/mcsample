@@ -15,15 +15,15 @@ from propobject import BaseObject
 __all__ = ["chain_to_median_error", "Sampler"]
 
 def chain_to_median_error(chain, structure=[16,50,84]):
-    """ returns the value +error -error
+    """ returns the value -error +error
     value been the median (50) and errors the 1 sigma error (16, 84%)
     
     """
     if len(np.shape(chain)) == 1:
         v = np.percentile(chain, [16,50,84], axis=0)
-        return np.asarray((v[1], v[2]-v[1], v[1]-v[0]))
+        return np.asarray((v[1], v[1]-v[0], v[2]-v[1]))
     
-    return np.asarray([(v[1], v[2]-v[1], v[1]-v[0]) for v in np.percentile(chain, structure, axis=1).T])
+    return np.asarray([(v[1], v[1]-v[0], v[2]-v[1]) for v in np.percentile(chain, structure, axis=1).T])
 
 
 class MCMCHandler( BaseObject ):
