@@ -15,32 +15,98 @@ from propobject import BaseObject
 __all__ = ["chain_to_median_error", "Sampler"]
 
 def chain_to_median_error(chain, structure=[16,50,84]):
-    """ returns the value -error +error
-    value been the median (50) and errors the 1 sigma error (16, 84%)
+    """
+    Returns [value, -error, +error], defined by the given structure.
     
+    Parameters
+    ----------
+    chain : [np.array]
+        Array containing the MCMC chain on which to recover the median and the errors.
+    
+    structure : [list]
+        Percentiles to get from the given chain.
+        The structure must be [-error, value, +error] percentiles.
+        Default is [16,50,84].
+    
+    
+    Returns
+    -------
+    np.array
     """
     if len(np.shape(chain)) == 1:
-        v = np.percentile(chain, [16,50,84], axis=0)
+        v = np.percentile(chain, structure, axis=0)
         return np.asarray((v[1], v[1]-v[0], v[2]-v[1]))
     
     return np.asarray([(v[1], v[1]-v[0], v[2]-v[1]) for v in np.percentile(chain, structure, axis=1).T])
 
 
 class MCMCHandler( BaseObject ):
-    """ """
+    """
+    "emcee" MCMC handler.
+    """
+    
     PROPERTIES = ["sampler", "walkers", "nsteps", "warmup"]
     SIDE_PROPERTIES = ["nchains"]
     DERIVED_PROPERTIES = ["pltcorner"]
     
     def __init__(self, sampler):
-        """ """
+        """
+        Initialization, run 'set_sampler'.
+        
+        Parameters
+        ----------
+        sampler : [Sampler]
+            Sampler object (cf. Samper class).
+        
+        
+        Returns
+        -------
+        Void
+        """
         self.set_sampler(sampler)
 
     # ------- #
     #  Main   #
     # ------- #
     def run(self, guess=None, nchains=None, nsteps=2000, warmup=500, kwargs=None, verbose=True):
-        """ """
+        """
+        Run "emcee" sampler.
+        
+        Parameters
+        ----------
+        guess : [list or np.array or None]
+            List of guess for each free parameter.
+            If None, the default guess for every free parameter.
+            Default is None.
+        
+        nchains : [int or None]
+            Number of chains for the sampling. It must be more than or equal to two times the number of free parameters.
+            If None, the number of chains is two times the number of free parameters.
+            Default is None.
+        
+        nsteps : [int]
+            Number of steps for sampling.
+            Default if 2000.
+        
+        warmup : [int]
+            Number of steps for warmup.
+            Default is 500.
+        
+        kwargs : [dict]
+            Additional paramters on the likelihood (self.sampler.get_logprob).
+            Default is None.
+        
+        Options
+        -------
+        verbose : [bool]
+            If True, print sampling states.
+            Default is True.
+        
+        
+        Returns
+        -------
+        Void
+        """
         self.set_steps(nsteps, warmup)
         self.setup(nchains=nchains, kwargs=kwargs)
         
@@ -57,7 +123,19 @@ class MCMCHandler( BaseObject ):
             pos, prob, state = self.walkers.run_mcmc(self.get_guesses(guess), self._total_steps)
 
     def _verbose_mcmc_printer_(self, ii):
-        """ """
+        """
+        Print MCMC sampling state.
+        
+        Parameters
+        ----------
+        ii : [int]
+            Sampling iteration.
+        
+        
+        Returns
+        -------
+        Void
+        """
         percentage = ii*self.nchains*100./(self._total_steps*self.nchains)
         if ii <= self.warmup and percentage % 10 == 0:
             print("{0}/{1} --> {2:.1f}% : Warmup".format(ii*self.nchains, (self._total_steps*self.nchains), percentage))
@@ -70,29 +148,100 @@ class MCMCHandler( BaseObject ):
     # SETTER  #
     # ------- #
     def set_sampler(self, sampler):
-        """ """
+        """
+        Set the sampler as an attribute.
+        
+        Parameters
+        ----------
+        sampler : [Sampler]
+            Sampler object (cf. Sampler class).
+        
+        
+        Returns
+        -------
+        Void
+        """
         if Sampler not in sampler.__class__.__mro__:
             raise TypeError("given sampler is not a Sampler object (nor inherite from)")
         self._properties["sampler"] = sampler
 
     def set_steps(self, nsteps, warmup):
-        """ """
+        """
+        Set the chozen number of steps (sampling and warmup) as attributes.
+        
+        Parameters
+        ----------
+        nsteps : [int]
+            Number of steps for sampling.
+        
+        warmup : [int]
+            Number of steps for warmup.
+        
+        
+        Returns
+        -------
+        Void
+        """
         self._properties["nsteps"] = int(nsteps)
         self._properties["warmup"] = int(warmup)
 
     def adjust_warmup(self, warmup):
-        """ change the relative warmup to steps ratio """
+        """
+        Change the relative warmup to steps ratio.
+        
+        Parameters
+        ----------
+        warmup : [int]
+            Number of steps for the warmup.
+        
+        
+        Returns
+        -------
+        Void
+        """
         if self._properties["nsteps"] is None:
-            raise AttributeError("steps and warmup not defined yet, please run set_steps()")
+            raise AttributeError("steps and warmup not defined yet, please run set_steps(nsteps, warmup)")
         warmup = int(warmup)
         self.set_steps(self._total_steps - warmup, warmup)
         
-    def set_nchains(self, nchains):
-        """ """
+    def set_nchains(self, nchains=None):
+        """
+        Set the number of chains as an attribute.
+        
+        Parameters
+        ----------
+        nchains : [int or None]
+            Number of chains for the sampling. It must be more than or equal to two times the number of free parameters.
+            If None, the number of chains is two times the number of free parameters.
+            Default is None.
+        
+        
+        Returns
+        -------
+        Void
+        """
         self._side_properties["nchains"] = nchains
         
     def setup(self, nchains=None, kwargs=None):
-        """ """
+        """
+        Create a "emcee" sampler and set it as an attribute.
+        
+        Parameters
+        ----------
+        nchains : [int or None]
+            Number of chains for the sampling. It must be more than or equal to two times the number of free parameters.
+            If None, the number of chains is two times the number of free parameters.
+            Default is None.
+        
+        kwargs : [dict]
+            Additional paramters on the likelihood (self.sampler.get_logprob).
+            Default is None.
+        
+        
+        Returns
+        -------
+        Void
+        """
         if nchains is not None:
             self.set_nchains(nchains)
             
@@ -103,7 +252,21 @@ class MCMCHandler( BaseObject ):
     # GETTER  #
     # ------- #
     def get_guesses(self, guess=None):
-        """ """
+        """
+        Return an array containing the emcee compatible guesses.
+        
+        Parameters
+        ----------
+        guess : [list or np.array or None]
+            List of guess for each free parameter.
+            If None, the default guess for every free parameter.
+            Default is None.
+        
+        
+        Returns
+        -------
+        np.array
+        """
         guess = np.zeros(self.nfreeparameters) if guess is None else np.asarray(guess)
         return np.asarray([g* (1+1e-2*np.random.randn(self.nchains)) for g in guess]).T
 
@@ -111,7 +274,16 @@ class MCMCHandler( BaseObject ):
     # PLOTTER #
     # ------- #
     def show(self, **kwargs):
-        """ """
+        """
+        Corner plot of the free parameters.
+        
+        **kwargs
+        
+        
+        Returns
+        -------
+        Void
+        """
         from .plot import MCCorner
         self._derived_properties["pltcorner"] = MCCorner(self)
         self.pltcorner.show(**kwargs)
@@ -121,22 +293,22 @@ class MCMCHandler( BaseObject ):
     # =================== #
     @property
     def sampler(self):
-        """ """
+        """ Sampler object """
         return self._properties["sampler"]
 
     @property
     def walkers(self):
-        """ """
+        """ walker arrays """
         return self._properties["walkers"]
 
     @property
     def chains(self):
-        """ """
+        """ chain arrays without warmup steps """
         return self.walkers.chain[:, self.warmup:, :].reshape((-1, self.nfreeparameters)).T
 
     @property
     def _chains_full(self):
-        """ """
+        """ full chain arrays (warmup + sampling) """
         return self.walkers.chain.reshape((-1, self.nfreeparameters)).T
 
     @property
@@ -146,16 +318,14 @@ class MCMCHandler( BaseObject ):
         
     @property
     def derived_values(self):
-        """ 3 times N array of the derived parameters
-            [50%, +1sigma (to 84%), -1sigma (to 16%)]
-        """
+        """ 3 times N array of the derived parameters [value, -error, +error] """
         return chain_to_median_error(self.chains)
     
     @property
     def derived_parameters(self):
         """ dictionary of the mcmc derived values with the structure:
            NAME_OF_THE_PARAMETER = 50% pdf
-           NAME_OF_THE_PARAMETER.err = [+1sigma, -1sigma]
+           NAME_OF_THE_PARAMETER.err = [-1sigma, +1sigma]
         """
         fitout = {}
         for v,name in zip(self.derived_values, self.freeparameters):
@@ -177,7 +347,7 @@ class MCMCHandler( BaseObject ):
 
     @property
     def _total_steps(self):
-        """ """
+        """ total number of steps (warmup + sampling) """
         return self.nsteps + self.warmup
     
     @property
@@ -305,6 +475,8 @@ class Sampler( BaseObject ):
         param : [list[float] or None]
             List of fitted parameter values.
         
+        **kwargs
+        
         
         Returns
         -------
@@ -356,6 +528,11 @@ class Sampler( BaseObject ):
         ----------
         param : [list[float] or None]
             List of fitted parameter values.
+        
+        
+        Returns
+        -------
+        list
         """
         if param is not None:
             self.set_parameters(param)
@@ -371,6 +548,13 @@ class Sampler( BaseObject ):
         ----------
         param : [list[float] or None]
             List of fitted parameter values.
+        
+        **kwargs
+        
+        
+        Returns
+        -------
+        Void
         """
         if param is not None:
             self.set_parameters(param)
@@ -380,7 +564,7 @@ class Sampler( BaseObject ):
     # =========== #
     #  emcee      #
     # =========== #     
-    def run_mcmc(self, guess=None, nchains=None, warmup=1000, nsteps=2000, verbose=True):
+    def run_mcmc(self, guess=None, nchains=None, warmup=1000, nsteps=2000, verbose=True, kwargs=None):
         """
         Run the emcee sampling.
         First step is the warmup, from which the result is used to initialize the true sampling.
@@ -400,18 +584,20 @@ class Sampler( BaseObject ):
         nsteps : [int]
             Number of iterations to run the true sampling.
         
-        
         Options
         -------
         verbose : [bool]
             Option to show MCMC progress and the time taken to run.
+        
+        kwargs : [dict]
+            Additional parameters.
         
         
         Returns
         -------
         Void
         """
-        self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains, verbose=verbose)
+        self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains, verbose=verbose, kwargs=kwargs)
         
     # ================ #
     #  Properties      #
@@ -445,7 +631,7 @@ class Sampler( BaseObject ):
 
     @property
     def mcmc(self):
-        """ """
+        """ MCMCHandler object """
         if self._properties["mcmc"] is None:
             self._properties["mcmc"] = MCMCHandler(self)
         return self._properties["mcmc"]
