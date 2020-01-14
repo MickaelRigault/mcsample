@@ -454,7 +454,7 @@ class Sampler( BaseObject ):
         
         Parameters
         ----------
-        freeparameters : [string or list[string]]
+        freeparameters : [string or list[string] or None]
             List of the names of the parameters to fit.
         
         
@@ -462,7 +462,7 @@ class Sampler( BaseObject ):
         -------
         Void
         """
-        freeparameters = freeparameters if type(freeparameters)==list else [freeparameters]
+        freeparameters = freeparameters if (type(freeparameters)==list or freeparameters is None) else [freeparameters]
         self._properties["freeparameters"] = freeparameters
         
     # - POSTERIOR
