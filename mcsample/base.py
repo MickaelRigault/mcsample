@@ -39,10 +39,10 @@ class MCMCHandler( BaseObject ):
     # ------- #
     #  Main   #
     # ------- #
-    def run(self, guess=None, nchains=None, nsteps=2000, warmup=500, verbose=True):
+    def run(self, guess=None, nchains=None, nsteps=2000, warmup=500, verbose=True, threads=1):
         """ """
         self.set_steps(nsteps, warmup)
-        self.setup(nchains=nchains)
+        self.setup(nchains=nchains, threads=threads)
         
         if verbose:
             from time import time
@@ -91,12 +91,13 @@ class MCMCHandler( BaseObject ):
         """ """
         self._side_properties["nchains"] = nchains
         
-    def setup(self, nchains=None):
+    def setup(self, nchains=None, threads=1, **kwargs):
         """ """
         if nchains is not None:
             self.set_nchains(nchains)
             
-        self._properties["walkers"] = emcee.EnsembleSampler(self.nchains, self.nfreeparameters, self.sampler.get_logprob)
+        self._properties["walkers"] = emcee.EnsembleSampler(self.nchains, self.nfreeparameters,
+                                                                self.sampler.get_logprob, threads=threads, **kwargs)
 
     # ------- #
     # GETTER  #
@@ -324,7 +325,7 @@ class Sampler( BaseObject ):
     # Overwrite
     #   
     # - PRIOR 
-    def get_logprior(self, param=None):
+    def get_logprior(self, param=None, verbose=False):
         """
         Return the sum of the log of the prior values returned for every concerned parameter.
         Each one fall within the interval [-inf, 0].
@@ -344,7 +345,6 @@ class Sampler( BaseObject ):
         # Code: To add a prior, add a variable called prior_BLA = TOTOTO
         #
         priors_ = np.asarray(self.get_prior_list(param=param))
-        
         return np.sum(np.log(priors_)) if np.all(priors_>0) else -np.inf
 
     def get_prior_list(self, param=None):
@@ -379,7 +379,7 @@ class Sampler( BaseObject ):
     # =========== #
     #  emcee      #
     # =========== #     
-    def run_mcmc(self, guess=None, nchains=None, warmup=1000, nsteps=2000, verbose=True):
+    def run_mcmc(self, guess=None, nchains=None, warmup=1000, nsteps=2000, verbose=True, threads=1, **kwargs):
         """
         Run the emcee sampling.
         First step is the warmup, from which the result is used to initialize the true sampling.
@@ -410,7 +410,7 @@ class Sampler( BaseObject ):
         -------
         Void
         """
-        self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains)
+        self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains,verbose=verbose, threads=threads, **kwargs)
         
     # ================ #
     #  Properties      #
