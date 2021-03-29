@@ -34,9 +34,7 @@ def normalflat_prior(value, loc, scale, boundaries=[None, None]):
     -------
     float
     """
-    if flat_prior(value, boundaries)==0:
-        return 0
-    return normal_prior(value, loc, scale)
+    return normal_prior(value, loc, scale)*flat_prior(value, boundaries=boundaries)
     
 def normal_prior(value, loc, scale):
     """
@@ -60,7 +58,7 @@ def normal_prior(value, loc, scale):
     """
     return stats.norm.pdf(value, loc=loc, scale=scale) 
 
-def flat_prior(value, boundaries=[None, None]):
+def flat_prior(value, boundaries=[-np.inf, +np.inf]):
     """
     Set up a flat prior on a paramater.
     Out of the bounds, the prior return 0, else it returns 1.
@@ -78,8 +76,5 @@ def flat_prior(value, boundaries=[None, None]):
     -------
     float
     """
-    if boundaries[0] is not None and value<boundaries[0]:
-        return 0
-    if boundaries[1] is not None and value>boundaries[1]:
-        return 0
-    return 1
+    return stats.uniform.pdf(value, *boundaries)
+    

@@ -222,6 +222,7 @@ class MCMCHandler( BaseObject ):
         """
         self._side_properties["nchains"] = nchains
         
+
     def setup(self, nchains=None, kwargs=None):
         """
         Create a "emcee" sampler and set it as an attribute.
@@ -505,7 +506,7 @@ class Sampler( BaseObject ):
     # Overwrite
     #   
     # - PRIOR 
-    def get_logprior(self, param=None):
+    def get_logprior(self, param=None, verbose=False):
         """
         Return the sum of the log of the prior values returned for every concerned parameter.
         Each one fall within the interval [-inf, 0].
@@ -525,7 +526,6 @@ class Sampler( BaseObject ):
         # Code: To add a prior, add a variable called prior_BLA = TOTOTO
         #
         priors_ = np.asarray(self.get_prior_list(param=param))
-        
         return np.sum(np.log(priors_)) if np.all(priors_>0) else -np.inf
 
     def get_prior_list(self, param=None):
@@ -606,6 +606,7 @@ class Sampler( BaseObject ):
         Void
         """
         self.mcmc.run(guess, nsteps=nsteps, warmup=warmup, nchains=nchains, verbose=verbose, kwargs=kwargs)
+
         
     # ================ #
     #  Properties      #
