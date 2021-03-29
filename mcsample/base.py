@@ -268,7 +268,15 @@ class MCMCHandler( BaseObject ):
         np.array
         """
         guess = np.zeros(self.nfreeparameters) if guess is None else np.asarray(guess)
-        return np.asarray([g* (1+1e-2*np.random.randn(self.nchains)) for g in guess]).T
+        if guess.ndim == 1:
+            return np.asarray([g* (1+1e-2*np.random.randn(self.nchains)) for g in guess]).T
+        elif guess.ndim == 2:
+            if guess.shape == (self.nchains, self.nfreeparameters):
+                return guess
+            else:
+                raise ValueError("The shape of 'guess' must be (nb of walkers, nb of free paramaters).")
+        else:
+            raise ValueError(f"You gave a non compatible 'guess' argument:\n {guess}")
 
     # ------- #
     # PLOTTER #
